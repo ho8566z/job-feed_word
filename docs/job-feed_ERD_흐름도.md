@@ -1,16 +1,16 @@
 # job-feed ERD · 흐름도
 
 > 3차 개인 프로젝트 (2026.11.10 ~ 11.13). 명세의 기준은 `excel_output/3차_개인프로젝트_job-feed_명세서.xlsx`이고, 이 파일은 그림용이다.
-> 외부 API(워크넷)의 실제 응답 필드·한도는 인증키 발급 후 확정한다(확인 전).
+> 외부 API는 고용24 공채속보 API(워크넷)로 확정했다(11/11 호출 테스트 성공). 응답에 지역 필드가 없어 region은 NULL 허용이고, 호출 한도는 확인 전이다.
 
 ## 1. 서비스 구성 · 데이터 흐름
 
 ```mermaid
 flowchart LR
-    S1[수집 스케줄러<br/>@Scheduled] --> C[수집<br/>@Async 병렬]
-    C -->|공고 목록 조회| W[(워크넷<br/>채용정보 API)]
+    S1[수집 스케줄러<br/>@Scheduled] --> C[수집<br/>키워드별 조회·합집합]
+    C -->|공고 목록 조회| W[(고용24<br/>공채속보 API)]
     C --> N[정규화<br/>회사·직무·지역·마감일·URL]
-    N --> D{URL이 이미<br/>job에 있나?}
+    N --> D{source+external_id가<br/>이미 job에 있나?}
     D -- 있음 --> X[제외]
     D -- 없음 --> J[(job 저장)]
     J --> Q[(send_log<br/>PENDING)]
@@ -21,6 +21,7 @@ flowchart LR
     R -- 아니오 --> Q
     R -- 예 --> F[send_log FAILED]
     P --> V[노션 공고 DB]
+    V -->|DB 자동화: 새 페이지 추가| A[알림]
     V --> M[채용공고 대시보드<br/>지역별 링크드 뷰]
 ```
 
@@ -51,7 +52,8 @@ erDiagram
     }
     job {
         bigint id PK
-        varchar url UK "중복 판단 기준"
+        varchar external_id "소스의 공고 ID(empSeqno), source_id와 복합 UK"
+        varchar url "원문 링크(중복 판단에 쓰지 않음)"
         varchar company
         varchar title
         varchar region "서울 등 13개 값(설정·규약 시트)"
