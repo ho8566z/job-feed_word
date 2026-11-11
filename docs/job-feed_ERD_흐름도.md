@@ -22,7 +22,7 @@ flowchart LR
     R -- 예 --> F[send_log FAILED]
     P --> V[노션 공고 DB]
     V -->|DB 자동화: 새 페이지 추가| A[알림]
-    V --> M[채용공고 대시보드<br/>지역별 링크드 뷰]
+    V --> M[채용공고 대시보드<br/>상태 보드·마감일순 뷰]
 ```
 
 ## 2. 전송 상태 전이 (send_log.status)
